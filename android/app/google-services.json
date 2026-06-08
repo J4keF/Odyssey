@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "352109049226",
+    "project_id": "odyssey-4600e",
+    "storage_bucket": "odyssey-4600e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:352109049226:android:0b1569d3aff27d82b28473",
+        "android_client_info": {
+          "package_name": "com.example.odyssey"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "352109049226-r1t8lhr8p3qmns6if0rpkct490hk9o1q.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.odyssey",
+            "certificate_hash": "f9c2a223261c4cd2b4938e84249ef17261115ac7"
+          }
+        },
+        {
+          "client_id": "352109049226-6m1v0pe193eospv82ao59qa33hssoql2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCKcZdSHXRHUc-CeNg1RVpOrq_TNrzA1wo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "352109049226-6m1v0pe193eospv82ao59qa33hssoql2.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "352109049226-s56mo9rj6ebl6ut9mtnf0avuaedelsbs.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.odyssey"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
