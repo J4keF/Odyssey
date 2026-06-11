@@ -1,0 +1,36 @@
+name: odyssey
+description: A personal goal tracking app with stages and repeating subgoals.
+publish_to: 'none'
+version: 1.0.0+1
+ 
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+ 
+dependencies:
+  flutter:
+    sdk: flutter
+  firebase_core: ^4.10.0
+  firebase_auth: ^6.5.2
+  cloud_firestore: ^6.5.0
+  google_sign_in: ^6.3.0
+  
+  # State management (lightweight — swap for Riverpod/Bloc if preferred)
+  provider: ^6.1.2
+ 
+  # Utilities
+  intl: ^0.19.0          # Date formatting
+  uuid: ^4.3.3           # Generate unique IDs locally
+  shared_preferences: ^2.2.2  # Persist small UI prefs (theme, etc.)
+ 
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+ 
+flutter:
+  uses-material-design: true
+  # Add custom fonts here if desired, e.g.:
+  # fonts:
+  #   - family: Geist
+  #     fonts:
+  #       - asset: fonts/Geist-Regular.ttf
