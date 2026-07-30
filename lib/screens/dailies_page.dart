@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/task_model.dart';
 import '../services/task_service.dart';
+import '../services/theme_controller.dart';
+import '../utils/color_utils.dart';
 import 'task_detail_page.dart' show DailyTile;
 
 class DailiesPage extends StatelessWidget {
@@ -8,14 +11,15 @@ class DailiesPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accentColor = context.watch<ThemeController>().accentColor;
     return SafeArea(
+      bottom: false, // let floating nav + scroll padding handle bottom clearance
       child: StreamBuilder<List<Task>>(
         stream: TaskService.tasksStream(),
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
-            return const Center(
-                child:
-                    CircularProgressIndicator(color: Color(0xFFE8581A)));
+            return Center(
+                child: CircularProgressIndicator(color: accentColor));
           }
 
           // Flatten all dailies with their task/milestone context
@@ -109,7 +113,7 @@ class DailiesPage extends StatelessWidget {
                 _SectionHeader(
                   label: 'To do today',
                   count: pending.length,
-                  color: const Color(0xFF185FA5),
+                  color: accentColor,
                 ),
                 SliverPadding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -140,7 +144,7 @@ class DailiesPage extends StatelessWidget {
                 ),
               ],
 
-              const SliverToBoxAdapter(child: SizedBox(height: 40)),
+              const SliverToBoxAdapter(child: SizedBox(height: 110)),
             ],
           );
         },
@@ -177,6 +181,7 @@ class _SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final progress = total > 0 ? done / total : 0.0;
+    final accentColor = context.watch<ThemeController>().accentColor;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -184,7 +189,7 @@ class _SummaryCard extends StatelessWidget {
         gradient: LinearGradient(
           colors: allComplete
               ? [const Color(0xFF27500A), const Color(0xFF3B6D11)]
-              : [const Color(0xFF0C447C), const Color(0xFF185FA5)],
+              : [darken(accentColor, 0.16), accentColor],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -288,6 +293,7 @@ class _DailyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accentColor = context.watch<ThemeController>().accentColor;
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
@@ -306,6 +312,7 @@ class _DailyCard extends StatelessWidget {
         milestone: entry.milestone,
         daily: entry.daily,
         showTaskLabel: true,
+        colorOverride: accentColor,
       ),
     );
   }

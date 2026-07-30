@@ -3,19 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
 import '../models/task_model.dart';
 import '../services/task_service.dart';
+import '../services/theme_controller.dart';
+import '../utils/color_utils.dart';
 import 'add_task_sheet.dart';
 import 'task_detail_page.dart';
 import 'account_page.dart';
 import 'dailies_page.dart';
-
-Color _darken(Color c, [double amount = 0.28]) {
-  final hsl = HSLColor.fromColor(c);
-  return hsl
-      .withLightness((hsl.lightness - amount).clamp(0.0, 1.0))
-      .toColor();
-}
 
 // ─── Root shell ───────────────────────────────────────────────────────────────
 
@@ -105,16 +101,21 @@ class _FloatingNavBar extends StatelessWidget {
             child: Row(
               children: [
                 _NavItem(
-                  icon: Icons.flag_outlined,
-                  activeIcon: Icons.flag_rounded,
-                  label: 'Tasks',
+                  iconWidget: SvgPicture.asset(
+                    'assets/odyssey_logo.svg',
+                    width: 28,
+                    height: 28,
+                    colorFilter: const ColorFilter.mode(
+                      Colors.black87,
+                      BlendMode.srcIn,
+                    ),
+                  ),
                   selected: index == 0,
                   onTap: () => onTap(0),
                 ),
                 _NavItem(
                   icon: Icons.loop_outlined,
                   activeIcon: Icons.loop_rounded,
-                  label: 'Routine',
                   selected: index == 1,
                   onTap: () => onTap(1),
                 ),
@@ -128,15 +129,15 @@ class _FloatingNavBar extends StatelessWidget {
 }
 
 class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final IconData activeIcon;
-  final String label;
+  final IconData? icon;
+  final IconData? activeIcon;
+  final Widget? iconWidget;
   final bool selected;
   final VoidCallback onTap;
   const _NavItem({
-    required this.icon,
-    required this.activeIcon,
-    required this.label,
+    this.icon,
+    this.activeIcon,
+    this.iconWidget,
     required this.selected,
     required this.onTap,
   });
@@ -147,37 +148,24 @@ class _NavItem extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOut,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 22, vertical: 5),
-              decoration: BoxDecoration(
-                color: selected
-                    ? Colors.black.withOpacity(0.08)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(
-                selected ? activeIcon : icon,
-                color: Colors.black87,
-                size: 22,
-              ),
+        child: Center(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+            decoration: BoxDecoration(
+              color: selected
+                  ? Colors.black.withOpacity(0.08)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(28),
             ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.black87,
-                fontWeight:
-                    selected ? FontWeight.w600 : FontWeight.w400,
-              ),
-            ),
-          ],
+            child: iconWidget ??
+                Icon(
+                  selected ? activeIcon : icon,
+                  color: Colors.black87,
+                  size: 28,
+                ),
+          ),
         ),
       ),
     );
@@ -200,6 +188,7 @@ class _TasksTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accentColor = context.watch<ThemeController>().accentColor;
     return SafeArea(
       bottom: false, // let floating nav handle bottom padding
       child: Column(
@@ -210,29 +199,6 @@ class _TasksTab extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Odyssey logo — orange on white
-                Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.07),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  padding: const EdgeInsets.all(7),
-                  child: SvgPicture.asset(
-                    'assets/odyssey_logo.svg',
-                    colorFilter: const ColorFilter.mode(
-                        Color(0xFFE8581A), BlendMode.srcIn),
-                  ),
-                ),
-                const SizedBox(width: 12),
                 const Text(
                   'Tasks',
                   style: TextStyle(
@@ -249,7 +215,7 @@ class _TasksTab extends StatelessWidget {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE8581A),
+                      color: accentColor,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(Icons.add_rounded,
@@ -273,9 +239,9 @@ class _TasksTab extends StatelessWidget {
               stream: TaskService.tasksStream(),
               builder: (context, snap) {
                 if (snap.connectionState == ConnectionState.waiting) {
-                  return const Center(
+                  return Center(
                     child: CircularProgressIndicator(
-                        color: Color(0xFFE8581A)),
+                        color: accentColor),
                   );
                 }
                 final tasks = snap.data ?? [];
@@ -305,6 +271,7 @@ class _UserAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     final photoUrl = user?.photoURL;
+    final accentColor = context.watch<ThemeController>().accentColor;
     final initials = (user?.displayName?.isNotEmpty == true
             ? user!.displayName![0]
             : user?.email?[0] ?? 'U')
@@ -315,7 +282,7 @@ class _UserAvatar extends StatelessWidget {
       height: 38,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: const Color(0xFFFFE8D5),
+        color: lighten(accentColor, 0.32),
         image: photoUrl != null
             ? DecorationImage(
                 image: NetworkImage(photoUrl), fit: BoxFit.cover)
@@ -324,10 +291,10 @@ class _UserAvatar extends StatelessWidget {
       child: photoUrl == null
           ? Center(
               child: Text(initials,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFFE8581A))))
+                      color: accentColor)))
           : null,
     );
   }
@@ -341,6 +308,7 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accentColor = context.watch<ThemeController>().accentColor;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -349,8 +317,8 @@ class _EmptyState extends StatelessWidget {
             'assets/odyssey_logo.svg',
             width: 64,
             height: 64,
-            colorFilter: const ColorFilter.mode(
-                Color(0xFFE8D5C8), BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(
+                lighten(accentColor, 0.28), BlendMode.srcIn),
           ),
           const SizedBox(height: 20),
           const Text('No tasks yet',
@@ -368,7 +336,7 @@ class _EmptyState extends StatelessWidget {
               padding: const EdgeInsets.symmetric(
                   horizontal: 24, vertical: 14),
               decoration: BoxDecoration(
-                color: const Color(0xFFE8581A),
+                color: accentColor,
                 borderRadius: BorderRadius.circular(14),
               ),
               child: const Text('Add a Task',
@@ -393,7 +361,9 @@ class _TaskCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Progress colour = darkened version of the card's background
-    final progressColor = _darken(task.cardColor);
+    final progressColor = darken(task.cardColor);
+    // Extra-darkened variant for progress text, so it reads with more contrast
+    final progressTextColor = darken(task.cardColor, 0.42);
 
     return GestureDetector(
       onTap: () => Navigator.push(
@@ -422,21 +392,6 @@ class _TaskCard extends StatelessWidget {
                 Text(task.emoji,
                     style: const TextStyle(fontSize: 28)),
                 const Spacer(),
-                if (task.milestones.isNotEmpty)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.65),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      '${task.milestones.length} milestone${task.milestones.length == 1 ? '' : 's'}',
-                      style: const TextStyle(
-                          fontSize: 11, fontWeight: FontWeight.w500),
-                    ),
-                  ),
-                const SizedBox(width: 8),
                 Icon(Icons.arrow_forward_ios_rounded,
                     size: 14, color: Colors.grey[500]),
               ],
@@ -477,12 +432,12 @@ class _TaskCard extends StatelessWidget {
                   Text(_progressLabel(task),
                       style: TextStyle(
                           fontSize: 11,
-                          color: progressColor.withOpacity(0.8))),
+                          color: progressTextColor)),
                   Text('${(task.totalProgress * 100).round()}%',
                       style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: progressColor)),
+                          color: progressTextColor)),
                 ],
               ),
             ],
