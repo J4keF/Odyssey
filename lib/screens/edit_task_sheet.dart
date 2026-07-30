@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../models/task_model.dart';
 import '../services/task_service.dart';
+import '../services/theme_controller.dart';
 import 'add_task_sheet.dart';
 
 const _uuid = Uuid();
-const _kOrange = Color(0xFFE8581A);
 
 class EditTaskSheet extends StatefulWidget {
   final Task task;
-  const EditTaskSheet({super.key, required this.task});
+  // When true, a fresh empty milestone is appended and opened expanded —
+  // the "quick add" entry point from the task detail page.
+  final bool startWithNewMilestone;
+  const EditTaskSheet(
+      {super.key, required this.task, this.startWithNewMilestone = false});
 
   @override
   State<EditTaskSheet> createState() => _EditTaskSheetState();
@@ -21,6 +26,7 @@ class _EditTaskSheetState extends State<EditTaskSheet> {
   late final TextEditingController _descCtrl;
   late int _colorIndex;
   late List<MilestoneDraft> _milestones;
+  String? _autoExpandId;
   bool _isSaving = false;
 
   @override
@@ -46,6 +52,12 @@ class _EditTaskSheetState extends State<EditTaskSheet> {
             .toList(),
       );
     }).toList();
+
+    if (widget.startWithNewMilestone) {
+      final draft = MilestoneDraft(id: _uuid.v4());
+      _milestones.add(draft);
+      _autoExpandId = draft.id;
+    }
   }
 
   @override
@@ -154,6 +166,7 @@ class _EditTaskSheetState extends State<EditTaskSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final accentColor = context.watch<ThemeController>().accentColor;
     return DraggableScrollableSheet(
       initialChildSize: 0.92,
       minChildSize: 0.5,
@@ -195,7 +208,7 @@ class _EditTaskSheetState extends State<EditTaskSheet> {
                     ElevatedButton(
                       onPressed: _isSaving ? null : _save,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _kOrange,
+                        backgroundColor: accentColor,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
                             horizontal: 20, vertical: 10),
@@ -295,7 +308,7 @@ class _EditTaskSheetState extends State<EditTaskSheet> {
                           icon: const Icon(Icons.add, size: 18),
                           label: const Text('Add'),
                           style: TextButton.styleFrom(
-                              foregroundColor: _kOrange,
+                              foregroundColor: accentColor,
                               padding: EdgeInsets.zero),
                         ),
                       ],
@@ -315,7 +328,7 @@ class _EditTaskSheetState extends State<EditTaskSheet> {
                             key: ValueKey(e.value.id),
                             draft: e.value,
                             index: e.key,
-                            startExpanded: false,
+                            startExpanded: e.value.id == _autoExpandId,
                             onDelete: () =>
                                 setState(() => _milestones.removeAt(e.key)),
                             onChange: () => setState(() {}),
@@ -339,6 +352,7 @@ class _ColorRowEdit extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accentColor = context.watch<ThemeController>().accentColor;
     return Row(
       children: List.generate(Task.cardColors.length, (i) {
         final isSel = i == selected;
@@ -352,11 +366,11 @@ class _ColorRowEdit extends StatelessWidget {
               color: Task.cardColors[i],
               shape: BoxShape.circle,
               border: Border.all(
-                  color: isSel ? _kOrange : Colors.transparent,
+                  color: isSel ? accentColor : Colors.transparent,
                   width: 2),
             ),
             child: isSel
-                ? const Icon(Icons.check, size: 14, color: _kOrange)
+                ? Icon(Icons.check, size: 14, color: accentColor)
                 : null,
           ),
         );

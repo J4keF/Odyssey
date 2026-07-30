@@ -2,14 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/task_model.dart';
 import '../services/task_service.dart';
+import '../utils/color_utils.dart';
 import 'edit_task_sheet.dart';
-
-Color _darken(Color c, [double amount = 0.28]) {
-  final hsl = HSLColor.fromColor(c);
-  return hsl
-      .withLightness((hsl.lightness - amount).clamp(0.0, 1.0))
-      .toColor();
-}
 
 class TaskDetailPage extends StatelessWidget {
   final Task task;
@@ -27,38 +21,30 @@ class TaskDetailPage extends StatelessWidget {
             task;
 
         return Scaffold(
-          backgroundColor: const Color(0xFFFAF7F4),
-          body: Stack(
-            children: [
-              // Card-colour top strip behind header
-              Positioned(
-                top: 0, left: 0, right: 0, height: 300,
-                child: Container(color: live.cardColor),
-              ),
-              SafeArea(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _Header(task: live),
-                    Expanded(
-                      child: Container(
-                        width: double.infinity,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFFAF7F4),
-                          borderRadius: BorderRadius.vertical(
-                              top: Radius.circular(32)),
-                        ),
-                        // Clip so content respects the rounded top
-                        clipBehavior: Clip.hardEdge,
-                        child: live.milestones.isEmpty
-                            ? const _EmptyMilestones()
-                            : _MilestoneList(task: live),
-                      ),
+          backgroundColor: live.cardColor,
+          body: SafeArea(
+            bottom: false,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _Header(task: live),
+                Expanded(
+                  child: Container(
+                    width: double.infinity,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFAF7F4),
+                      borderRadius:
+                          BorderRadius.vertical(top: Radius.circular(32)),
                     ),
-                  ],
+                    // Clip so content respects the rounded top
+                    clipBehavior: Clip.antiAlias,
+                    child: live.milestones.isEmpty
+                        ? const _EmptyMilestones()
+                        : _MilestoneList(task: live),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
@@ -99,8 +85,8 @@ class _Header extends StatelessWidget {
               GestureDetector(
                 onTap: () => _openEdit(context),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 7),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.75),
                     borderRadius: BorderRadius.circular(20),
@@ -127,8 +113,7 @@ class _Header extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(task.emoji,
-                    style: const TextStyle(fontSize: 48)),
+                Text(task.emoji, style: const TextStyle(fontSize: 48)),
                 const SizedBox(height: 6),
                 Text(task.title,
                     style: const TextStyle(
@@ -141,9 +126,7 @@ class _Header extends StatelessWidget {
                   const SizedBox(height: 5),
                   Text(task.description,
                       style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                          height: 1.4)),
+                          fontSize: 14, color: Colors.grey[600], height: 1.4)),
                 ],
                 const SizedBox(height: 12),
                 _ProgressBar(task: task),
@@ -163,7 +146,8 @@ class _ProgressBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final progress = task.totalProgress;
-    final color = _darken(task.cardColor);
+    final color = darken(task.cardColor);
+    final textColor = darken(task.cardColor, 0.42);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -171,14 +155,10 @@ class _ProgressBar extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text('Overall progress',
-                style: TextStyle(
-                    fontSize: 12,
-                    color: color.withOpacity(0.8))),
+                style: TextStyle(fontSize: 12, color: textColor)),
             Text('${(progress * 100).round()}%',
                 style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: color)),
+                    fontSize: 12, fontWeight: FontWeight.w600, color: textColor)),
           ],
         ),
         const SizedBox(height: 6),
@@ -231,13 +211,73 @@ class _MilestoneList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bottomPad = MediaQuery.of(context).padding.bottom;
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(20, 28, 20, 40),
-      itemCount: task.milestones.length,
-      itemBuilder: (ctx, i) => _MilestoneRow(
-        task: task,
-        milestone: task.milestones[i],
-        isLast: i == task.milestones.length - 1,
+      padding: EdgeInsets.fromLTRB(20, 28, 20, 40 + bottomPad),
+      itemCount: task.milestones.length + 1,
+      itemBuilder: (ctx, i) {
+        if (i == task.milestones.length) {
+          return _QuickAddMilestone(task: task);
+        }
+        return _MilestoneRow(
+          task: task,
+          milestone: task.milestones[i],
+        );
+      },
+    );
+  }
+}
+
+// ─── Quick add milestone ────────────────────────────────────────────────────
+
+class _QuickAddMilestone extends StatelessWidget {
+  final Task task;
+  const _QuickAddMilestone({required this.task});
+
+  void _open(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) =>
+          EditTaskSheet(task: task, startWithNewMilestone: true),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = darken(task.cardColor);
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      // Row wrapper to loosely contrain width, allows add button to be left aligned
+      child: Row(
+        children: [
+          SizedBox(
+            width: 32,
+            child: Column(
+              children: [
+                CustomPaint(
+                  painter: _DottedLinePainter(),
+                  child: const SizedBox(width: 2, height: 16),
+                ),
+                GestureDetector(
+                  onTap: () => _open(context),
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white,
+                      border: Border.all(
+                          color: color.withOpacity(0.4), width: 1.5),
+                    ),
+                    child: Icon(Icons.add_rounded, size: 16, color: color),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -248,11 +288,7 @@ class _MilestoneList extends StatelessWidget {
 class _MilestoneRow extends StatefulWidget {
   final Task task;
   final Milestone milestone;
-  final bool isLast;
-  const _MilestoneRow(
-      {required this.task,
-      required this.milestone,
-      required this.isLast});
+  const _MilestoneRow({required this.task, required this.milestone});
 
   @override
   State<_MilestoneRow> createState() => _MilestoneRowState();
@@ -264,168 +300,186 @@ class _MilestoneRowState extends State<_MilestoneRow> {
   @override
   Widget build(BuildContext context) {
     final m = widget.milestone;
-    final progressColor = _darken(widget.task.cardColor);
+    final progressColor = darken(widget.task.cardColor);
     final allDone = m.steppingStones.isNotEmpty &&
         m.steppingStones.every((s) => s.isCompleted);
 
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Dotted path column
-          SizedBox(
-            width: 32,
-            child: Column(
-              children: [
-                Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: allDone ? progressColor : Colors.white,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: allDone
-                          ? progressColor
-                          : Colors.grey.shade300,
-                      width: 2,
-                    ),
-                  ),
-                  child: allDone
-                      ? const Icon(Icons.check_rounded,
-                          color: Colors.white, size: 14)
-                      : Center(
-                          child: Text('${m.order + 1}',
-                              style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.grey))),
-                ),
-                if (!widget.isLast)
-                  Expanded(
-                    child: CustomPaint(
-                      painter: _DottedLinePainter(),
-                      child: const SizedBox(width: 2),
-                    ),
-                  ),
-              ],
-            ),
+    // Stack allows dotted connector to track frame height
+    // Connector overshoots bottom edge to connect to next milestone
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        // Approximate centering of milestone number
+        Positioned(
+          left: 15,
+          top: 36,
+          bottom: -9,
+          child: CustomPaint(
+            painter: _DottedLinePainter(),
+            child: const SizedBox(width: 2),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Milestone card header
-                  GestureDetector(
-                    onTap: () =>
-                        setState(() => _expanded = !_expanded),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: [
-                          BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3))
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  m.title.isEmpty
-                                      ? 'Milestone ${m.order + 1}'
-                                      : m.title,
-                                  style: const TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600),
-                                ),
-                              ),
-                              if (m.targetDate != null)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: progressColor
-                                        .withOpacity(0.12),
-                                    borderRadius:
-                                        BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    DateFormat('d MMM')
-                                        .format(m.targetDate!),
-                                    style: TextStyle(
+                  // Milestone marker
+                  SizedBox(
+                    width: 32,
+                    child: Center(
+                      child: Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: allDone ? progressColor : Colors.white,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color:
+                                allDone ? progressColor : Colors.grey.shade300,
+                            width: 2,
+                          ),
+                        ),
+                        child: allDone
+                            ? const Icon(Icons.check_rounded,
+                                color: Colors.white, size: 14)
+                            : Center(
+                                child: Text('${m.order + 1}',
+                                    style: const TextStyle(
                                         fontSize: 11,
-                                        color: progressColor,
-                                        fontWeight: FontWeight.w500),
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.grey))),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => setState(() => _expanded = !_expanded),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3))
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    m.title.isEmpty
+                                        ? 'Milestone ${m.order + 1}'
+                                        : m.title,
+                                    style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600),
                                   ),
                                 ),
-                              const SizedBox(width: 6),
-                              _CountPills(milestone: m),
-                              const SizedBox(width: 4),
-                              Icon(
-                                _expanded
-                                    ? Icons.keyboard_arrow_up_rounded
-                                    : Icons
-                                        .keyboard_arrow_down_rounded,
-                                color: Colors.grey[400],
-                                size: 20,
+                                if (m.targetDate != null)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: progressColor.withOpacity(0.12),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      DateFormat('d MMM').format(m.targetDate!),
+                                      style: TextStyle(
+                                          fontSize: 11,
+                                          color: progressColor,
+                                          fontWeight: FontWeight.w500),
+                                    ),
+                                  ),
+                                const SizedBox(width: 6),
+                                _CountPills(milestone: m, color: progressColor),
+                                const SizedBox(width: 4),
+                                Icon(
+                                  _expanded
+                                      ? Icons.keyboard_arrow_up_rounded
+                                      : Icons.keyboard_arrow_down_rounded,
+                                  color: progressColor,
+                                  size: 20,
+                                ),
+                              ],
+                            ),
+                            if (m.steppingStones.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(3),
+                                child: LinearProgressIndicator(
+                                  value: m.progress,
+                                  backgroundColor:
+                                      progressColor.withOpacity(0.15),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      progressColor),
+                                  minHeight: 4,
+                                ),
                               ),
                             ],
-                          ),
-                          if (m.steppingStones.isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(3),
-                              child: LinearProgressIndicator(
-                                value: m.progress,
-                                backgroundColor:
-                                    progressColor.withOpacity(0.15),
-                                valueColor:
-                                    AlwaysStoppedAnimation<Color>(
-                                        progressColor),
-                                minHeight: 4,
-                              ),
-                            ),
                           ],
-                        ],
+                        ),
                       ),
                     ),
                   ),
-                  if (_expanded) ...[
-                    const SizedBox(height: 8),
-                    if (m.steppingStones.isNotEmpty)
-                      _SteppingStoneSection(
-                          task: widget.task, milestone: m),
-                    if (m.dailies.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      _DailySection(
-                          task: widget.task, milestone: m),
-                    ],
-                    if (m.steppingStones.isEmpty &&
-                        m.dailies.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text('No items yet. Tap Edit to add.',
-                            style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.grey[400])),
-                      ),
-                  ],
                 ],
               ),
-            ),
+              Padding(
+                padding: const EdgeInsets.only(left: 44),
+                child: AnimatedSize(
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOut,
+                  alignment: Alignment.topCenter,
+                  // Fixed full width on both states — only height should
+                  // animate, otherwise the narrower "no items" text makes
+                  // it visibly swing in sideways too.
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: !_expanded
+                        ? const SizedBox.shrink()
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 8),
+                              if (m.steppingStones.isNotEmpty)
+                                _SteppingStoneSection(
+                                    task: widget.task, milestone: m),
+                              if (m.dailies.isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                _DailySection(
+                                    task: widget.task, milestone: m),
+                              ],
+                              if (m.steppingStones.isEmpty &&
+                                  m.dailies.isEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Text(
+                                      'No items yet. Tap Edit to add.',
+                                      style: TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.grey[400])),
+                                ),
+                            ],
+                          ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -434,7 +488,8 @@ class _MilestoneRowState extends State<_MilestoneRow> {
 
 class _CountPills extends StatelessWidget {
   final Milestone milestone;
-  const _CountPills({required this.milestone});
+  final Color color;
+  const _CountPills({required this.milestone, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -444,15 +499,15 @@ class _CountPills extends StatelessWidget {
         if (milestone.steppingStones.isNotEmpty)
           _MiniPill(
               count: milestone.steppingStones.length,
-              bg: const Color(0xFFEAF3DE),
-              fg: const Color(0xFF3B6D11),
+              bg: lighten(color, 0.4),
+              fg: color,
               icon: Icons.flag_outlined),
         if (milestone.dailies.isNotEmpty) ...[
           const SizedBox(width: 4),
           _MiniPill(
               count: milestone.dailies.length,
-              bg: const Color(0xFFE6F1FB),
-              fg: const Color(0xFF185FA5),
+              bg: lighten(color, 0.4),
+              fg: color,
               icon: Icons.loop_rounded),
         ],
       ],
@@ -473,8 +528,7 @@ class _MiniPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding:
-          const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration:
           BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
       child: Row(
@@ -484,9 +538,7 @@ class _MiniPill extends StatelessWidget {
           const SizedBox(width: 3),
           Text('$count',
               style: TextStyle(
-                  fontSize: 11,
-                  color: fg,
-                  fontWeight: FontWeight.w600)),
+                  fontSize: 11, color: fg, fontWeight: FontWeight.w600)),
         ],
       ),
     );
@@ -498,50 +550,42 @@ class _MiniPill extends StatelessWidget {
 class _SteppingStoneSection extends StatelessWidget {
   final Task task;
   final Milestone milestone;
-  const _SteppingStoneSection(
-      {required this.task, required this.milestone});
+  const _SteppingStoneSection({required this.task, required this.milestone});
 
   @override
   Widget build(BuildContext context) {
+    final color = darken(task.cardColor);
     final pending =
         milestone.steppingStones.where((s) => !s.isCompleted).toList();
-    final done =
-        milestone.steppingStones.where((s) => s.isCompleted).toList();
+    final done = milestone.steppingStones.where((s) => s.isCompleted).toList();
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFEAF3DE),
+        color: lighten(color, 0.4),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.flag_outlined,
-                  size: 13, color: Color(0xFF3B6D11)),
-              SizedBox(width: 5),
+              Icon(Icons.flag_outlined, size: 13, color: color),
+              const SizedBox(width: 5),
               Text('Stepping Stones',
                   style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF3B6D11))),
+                      color: color)),
             ],
           ),
           const SizedBox(height: 8),
-          ...pending.map((s) =>
-              _StoneTile(task: task, milestone: milestone, stone: s)),
+          ...pending.map(
+              (s) => _StoneTile(task: task, milestone: milestone, stone: s)),
           if (done.isNotEmpty) ...[
             const SizedBox(height: 8),
-            Text('Completed',
-                style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey[500],
-                    fontWeight: FontWeight.w500)),
-            const SizedBox(height: 4),
-            ...done.map((s) =>
-                _StoneTile(task: task, milestone: milestone, stone: s)),
+            ...done.map(
+                (s) => _StoneTile(task: task, milestone: milestone, stone: s)),
           ],
         ],
       ),
@@ -554,12 +598,11 @@ class _StoneTile extends StatelessWidget {
   final Milestone milestone;
   final SteppingStone stone;
   const _StoneTile(
-      {required this.task,
-      required this.milestone,
-      required this.stone});
+      {required this.task, required this.milestone, required this.stone});
 
   @override
   Widget build(BuildContext context) {
+    final color = darken(task.cardColor);
     return GestureDetector(
       onTap: () => TaskService.toggleSteppingStone(
           task: task, milestoneId: milestone.id, stoneId: stone.id),
@@ -569,14 +612,12 @@ class _StoneTile extends StatelessWidget {
           children: [
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              width: 20, height: 20,
+              width: 20,
+              height: 20,
               decoration: BoxDecoration(
-                color: stone.isCompleted
-                    ? const Color(0xFF3B6D11)
-                    : Colors.white,
+                color: stone.isCompleted ? color : Colors.white,
                 borderRadius: BorderRadius.circular(5),
-                border: Border.all(
-                    color: const Color(0xFF3B6D11), width: 1.5),
+                border: Border.all(color: color, width: 1.5),
               ),
               child: stone.isCompleted
                   ? const Icon(Icons.check_rounded,
@@ -591,9 +632,8 @@ class _StoneTile extends StatelessWidget {
                     color: stone.isCompleted
                         ? Colors.grey[500]
                         : const Color(0xFF1A1A1A),
-                    decoration: stone.isCompleted
-                        ? TextDecoration.lineThrough
-                        : null,
+                    decoration:
+                        stone.isCompleted ? TextDecoration.lineThrough : null,
                   )),
             ),
           ],
@@ -608,35 +648,34 @@ class _StoneTile extends StatelessWidget {
 class _DailySection extends StatelessWidget {
   final Task task;
   final Milestone milestone;
-  const _DailySection(
-      {required this.task, required this.milestone});
+  const _DailySection({required this.task, required this.milestone});
 
   @override
   Widget build(BuildContext context) {
+    final color = darken(task.cardColor);
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFE6F1FB),
+        color: lighten(color, 0.4),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.loop_rounded,
-                  size: 13, color: Color(0xFF185FA5)),
-              SizedBox(width: 5),
+              Icon(Icons.loop_rounded, size: 13, color: color),
+              const SizedBox(width: 5),
               Text('Dailies',
                   style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF185FA5))),
+                      color: color)),
             ],
           ),
           const SizedBox(height: 8),
-          ...milestone.dailies.map((d) => DailyTile(
-              task: task, milestone: milestone, daily: d)),
+          ...milestone.dailies.map(
+              (d) => DailyTile(task: task, milestone: milestone, daily: d)),
         ],
       ),
     );
@@ -650,17 +689,22 @@ class DailyTile extends StatelessWidget {
   final Milestone milestone;
   final Daily daily;
   final bool showTaskLabel;
+  // Overrides the task-colour default — used on the Routine page, where
+  // every entry should follow the app theme colour instead of its own task.
+  final Color? colorOverride;
   const DailyTile({
     super.key,
     required this.task,
     required this.milestone,
     required this.daily,
     this.showTaskLabel = false,
+    this.colorOverride,
   });
 
   @override
   Widget build(BuildContext context) {
     final checked = daily.isCheckedToday;
+    final color = colorOverride ?? darken(task.cardColor);
     return GestureDetector(
       onTap: () => TaskService.toggleDaily(
           task: task, milestoneId: milestone.id, dailyId: daily.id),
@@ -670,14 +714,12 @@ class DailyTile extends StatelessWidget {
           children: [
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              width: 22, height: 22,
+              width: 22,
+              height: 22,
               decoration: BoxDecoration(
-                color: checked
-                    ? const Color(0xFF185FA5)
-                    : Colors.white,
+                color: checked ? color : Colors.white,
                 borderRadius: BorderRadius.circular(11),
-                border: Border.all(
-                    color: const Color(0xFF185FA5), width: 1.5),
+                border: Border.all(color: color, width: 1.5),
               ),
               child: checked
                   ? const Icon(Icons.check_rounded,
@@ -695,21 +737,18 @@ class DailyTile extends StatelessWidget {
                         color: checked
                             ? Colors.grey[400]
                             : const Color(0xFF1A1A1A),
-                        decoration: checked
-                            ? TextDecoration.lineThrough
-                            : null,
+                        decoration: checked ? TextDecoration.lineThrough : null,
                       )),
                   if (showTaskLabel)
                     Text(
                       '${task.emoji} ${task.title} › ${milestone.title}',
-                      style: TextStyle(
-                          fontSize: 11, color: Colors.grey[400]),
+                      style: TextStyle(fontSize: 11, color: Colors.grey[400]),
                     ),
                 ],
               ),
             ),
             if (daily.currentStreak > 0)
-              _StreakBadge(daily: daily),
+              _StreakBadge(daily: daily, color: color),
           ],
         ),
       ),
@@ -719,7 +758,8 @@ class DailyTile extends StatelessWidget {
 
 class _StreakBadge extends StatelessWidget {
   final Daily daily;
-  const _StreakBadge({required this.daily});
+  final Color color;
+  const _StreakBadge({required this.daily, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -727,19 +767,15 @@ class _StreakBadge extends StatelessWidget {
     return Tooltip(
       message: 'Best: ${daily.longestStreak} days',
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
-          color: active
-              ? const Color(0xFFE8581A)
-              : Colors.grey.shade200,
+          color: active ? color : Colors.grey.shade200,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(active ? '🔥' : '💤',
-                style: const TextStyle(fontSize: 11)),
+            Text(active ? '🔥' : '💤', style: const TextStyle(fontSize: 11)),
             const SizedBox(width: 3),
             Text('${daily.currentStreak}',
                 style: TextStyle(
@@ -764,8 +800,8 @@ class _DottedLinePainter extends CustomPainter {
     const dotH = 4.0, gap = 6.0;
     double y = 0;
     while (y < size.height) {
-      canvas.drawLine(Offset(size.width / 2, y),
-          Offset(size.width / 2, y + dotH), paint);
+      canvas.drawLine(
+          Offset(size.width / 2, y), Offset(size.width / 2, y + dotH), paint);
       y += dotH + gap;
     }
   }
