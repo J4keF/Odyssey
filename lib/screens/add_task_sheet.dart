@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../models/task_model.dart';
 import '../services/task_service.dart';
+import '../services/theme_controller.dart';
+import '../utils/color_utils.dart';
 
 const _uuid = Uuid();
-const kOrange = Color(0xFFE8581A);
 
 // ─── Shared emoji list ────────────────────────────────────────────────────────
 
@@ -52,6 +54,7 @@ class _EmojiPickerModalState extends State<EmojiPickerModal> {
 
   @override
   Widget build(BuildContext context) {
+    final accentColor = context.watch<ThemeController>().accentColor;
     return Container(
       decoration: const BoxDecoration(
         color: Color(0xFFFAF7F4),
@@ -82,8 +85,8 @@ class _EmojiPickerModalState extends State<EmojiPickerModal> {
                 const Spacer(),
                 TextButton(
                   onPressed: () => Navigator.pop(context, _selected),
-                  child: const Text('Done',
-                      style: TextStyle(color: kOrange, fontWeight: FontWeight.w600)),
+                  child: Text('Done',
+                      style: TextStyle(color: accentColor, fontWeight: FontWeight.w600)),
                 ),
               ],
             ),
@@ -116,7 +119,7 @@ class _EmojiPickerModalState extends State<EmojiPickerModal> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: kOrange, width: 2),
+                  borderSide: BorderSide(color: accentColor, width: 2),
                 ),
                 suffixIcon: const Tooltip(
                   message: 'Tap the emoji key (🌐 or 😊) on your keyboard',
@@ -166,7 +169,7 @@ class _EmojiPickerModalState extends State<EmojiPickerModal> {
                   child: Container(
                     decoration: BoxDecoration(
                       color: isSel
-                          ? const Color(0xFFFFE8D5)
+                          ? lighten(accentColor, 0.32)
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -297,6 +300,7 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final accentColor = context.watch<ThemeController>().accentColor;
     return DraggableScrollableSheet(
       initialChildSize: 0.92,
       minChildSize: 0.5,
@@ -338,7 +342,7 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
                     ElevatedButton(
                       onPressed: _isSaving ? null : _save,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: kOrange,
+                        backgroundColor: accentColor,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
                             horizontal: 20, vertical: 10),
@@ -364,7 +368,7 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
                   controller: scrollCtrl,
                   padding: const EdgeInsets.all(20),
                   children: [
-                    // Emoji + Title — emoji is a plain button, no inline grid
+                    // Emoji and Title
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -435,7 +439,7 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
                           icon: const Icon(Icons.add, size: 18),
                           label: const Text('Add'),
                           style: TextButton.styleFrom(
-                              foregroundColor: kOrange,
+                              foregroundColor: accentColor,
                               padding: EdgeInsets.zero),
                         ),
                       ],
@@ -483,6 +487,7 @@ class _ColorRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accentColor = context.watch<ThemeController>().accentColor;
     return Row(
       children: List.generate(colors.length, (i) {
         final isSel = i == selected;
@@ -496,13 +501,13 @@ class _ColorRow extends StatelessWidget {
               shape: BoxShape.circle,
               border: Border.all(
                 color: isSel
-                    ? kOrange
+                    ? accentColor
                     : Colors.transparent,
                 width: 2,
               ),
             ),
             child: isSel
-                ? const Icon(Icons.check, size: 14, color: kOrange)
+                ? Icon(Icons.check, size: 14, color: accentColor)
                 : null,
           ),
         );
@@ -553,6 +558,7 @@ class _MilestoneDraftCardState extends State<MilestoneDraftCard> {
   @override
   Widget build(BuildContext context) {
     final m = widget.draft;
+    final accentColor = context.watch<ThemeController>().accentColor;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -578,8 +584,8 @@ class _MilestoneDraftCardState extends State<MilestoneDraftCard> {
                 children: [
                   Container(
                     width: 24, height: 24,
-                    decoration: const BoxDecoration(
-                        color: kOrange, shape: BoxShape.circle),
+                    decoration: BoxDecoration(
+                        color: accentColor, shape: BoxShape.circle),
                     child: Center(
                       child: Text('${widget.index + 1}',
                           style: const TextStyle(
@@ -617,8 +623,8 @@ class _MilestoneDraftCardState extends State<MilestoneDraftCard> {
                         lastDate: DateTime(2100),
                         builder: (ctx, child) => Theme(
                           data: Theme.of(ctx).copyWith(
-                              colorScheme: const ColorScheme.light(
-                                  primary: kOrange)),
+                              colorScheme: ColorScheme.light(
+                                  primary: accentColor)),
                           child: child!,
                         ),
                       );
@@ -692,8 +698,8 @@ class _MilestoneDraftCardState extends State<MilestoneDraftCard> {
                   SubList(
                     label: 'Dailies',
                     icon: Icons.loop_rounded,
-                    color: const Color(0xFF185FA5),
-                    bgColor: const Color(0xFFE6F1FB),
+                    color: accentColor,
+                    bgColor: lighten(accentColor, 0.38),
                     items: m.dailies,
                     onAdd: () {
                       setState(() =>
