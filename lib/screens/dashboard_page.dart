@@ -12,6 +12,7 @@ import 'add_task_sheet.dart';
 import 'task_detail_page.dart';
 import 'account_page.dart';
 import 'dailies_page.dart';
+import 'mentor_page.dart';
 
 // ─── Root shell ───────────────────────────────────────────────────────────────
 
@@ -55,7 +56,7 @@ class _DashboardPageState extends State<DashboardPage> {
       extendBody: true,
       body: PageView(
         controller: _pageCtrl,
-        children: const [_TasksTab(), DailiesPage()],
+        children: const [_TasksTab(), DailiesPage(), MentorPage()],
         onPageChanged: (i) => setState(() => _index = i),
       ),
       bottomNavigationBar: _FloatingNavBar(
@@ -118,6 +119,12 @@ class _FloatingNavBar extends StatelessWidget {
                   activeIcon: Icons.loop_rounded,
                   selected: index == 1,
                   onTap: () => onTap(1),
+                ),
+                _NavItem(
+                  icon: Icons.account_balance_outlined,
+                  activeIcon: Icons.account_balance,
+                  selected: index == 2,
+                  onTap: () => onTap(2),
                 ),
               ],
             ),
