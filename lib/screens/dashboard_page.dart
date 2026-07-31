@@ -115,8 +115,8 @@ class _FloatingNavBar extends StatelessWidget {
                   onTap: () => onTap(0),
                 ),
                 _NavItem(
-                  icon: Icons.loop_outlined,
-                  activeIcon: Icons.loop_rounded,
+                  icon: Icons.calendar_today_outlined,
+                  activeIcon: Icons.calendar_today_rounded,
                   selected: index == 1,
                   onTap: () => onTap(1),
                 ),

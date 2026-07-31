@@ -508,7 +508,7 @@ class _CountPills extends StatelessWidget {
               count: milestone.dailies.length,
               bg: lighten(color, 0.4),
               fg: color,
-              icon: Icons.loop_rounded),
+              icon: Icons.calendar_today_rounded),
         ],
       ],
     );
@@ -664,7 +664,7 @@ class _DailySection extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.loop_rounded, size: 13, color: color),
+              Icon(Icons.calendar_today_rounded, size: 13, color: color),
               const SizedBox(width: 5),
               Text('Dailies',
                   style: TextStyle(

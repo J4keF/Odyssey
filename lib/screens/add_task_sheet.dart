@@ -697,7 +697,7 @@ class _MilestoneDraftCardState extends State<MilestoneDraftCard> {
                   const SizedBox(height: 14),
                   SubList(
                     label: 'Dailies',
-                    icon: Icons.loop_rounded,
+                    icon: Icons.calendar_today_rounded,
                     color: accentColor,
                     bgColor: lighten(accentColor, 0.38),
                     items: m.dailies,
