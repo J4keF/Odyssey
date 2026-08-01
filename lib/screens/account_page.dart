@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
+import '../services/mentor_service.dart';
 import '../services/theme_controller.dart';
 import '../utils/color_utils.dart';
 
@@ -161,6 +162,15 @@ class AccountPage extends StatelessWidget {
                     onTap: () => _confirmLogout(context),
                   ),
                   const SizedBox(height: 24),
+                  const _SectionLabel(label: 'Developer Tools'),
+                  const SizedBox(height: 10),
+                  _ActionTile(
+                    icon: Icons.delete_sweep_outlined,
+                    label: 'Clear Mentor Chat',
+                    subtitle: 'Erase your conversation history with Mentor',
+                    onTap: () => _confirmClearMentorChat(context),
+                  ),
+                  const SizedBox(height: 24),
                   const _SectionLabel(label: 'Tread Carefully'),
                   const SizedBox(height: 10),
                   _ActionTile(
@@ -294,6 +304,39 @@ class AccountPage extends StatelessWidget {
         }
       }
     }
+  }
+
+  void _confirmClearMentorChat(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20)),
+        title: const Text('Clear Mentor chat?',
+            style: TextStyle(fontWeight: FontWeight.w700)),
+        content: const Text(
+            'This permanently deletes your conversation history with Mentor.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel',
+                  style: TextStyle(color: Colors.grey))),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await MentorService.clearHistory();
+              if (context.mounted) {
+                _showSnack(context, 'Mentor chat cleared', isError: false);
+              }
+            },
+            child: const Text('Clear',
+                style: TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showSnack(BuildContext context, String msg,

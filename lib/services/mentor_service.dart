@@ -42,4 +42,14 @@ class MentorService {
       createdAt: DateTime.now(),
     ).toMap());
   }
+
+  // Deletes every message in this user's Mentor chat history
+  static Future<void> clearHistory() async {
+    final snap = await _col.get();
+    final batch = _db.batch();
+    for (final doc in snap.docs) {
+      batch.delete(doc.reference);
+    }
+    await batch.commit();
+  }
 }
