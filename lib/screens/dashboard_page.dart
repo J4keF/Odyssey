@@ -43,8 +43,7 @@ class _DashboardPageState extends State<DashboardPage> {
     if (i == _index) return;
     setState(() => _index = i);
     _pageCtrl.animateToPage(i,
-        duration: const Duration(milliseconds: 320),
-        curve: Curves.easeInOut);
+        duration: const Duration(milliseconds: 320), curve: Curves.easeInOut);
   }
 
   @override
@@ -89,8 +88,8 @@ class _FloatingNavBar extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.75),
               borderRadius: BorderRadius.circular(28),
-              border: Border.all(
-                  color: Colors.white.withOpacity(0.6), width: 1),
+              border:
+                  Border.all(color: Colors.white.withOpacity(0.6), width: 1),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.10),
@@ -233,8 +232,7 @@ class _TasksTab extends StatelessWidget {
                 GestureDetector(
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(
-                        builder: (_) => const AccountPage()),
+                    MaterialPageRoute(builder: (_) => const AccountPage()),
                   ),
                   child: _UserAvatar(),
                 ),
@@ -247,20 +245,30 @@ class _TasksTab extends StatelessWidget {
               builder: (context, snap) {
                 if (snap.connectionState == ConnectionState.waiting) {
                   return Center(
-                    child: CircularProgressIndicator(
-                        color: accentColor),
+                    child: CircularProgressIndicator(color: accentColor),
                   );
                 }
                 final tasks = snap.data ?? [];
                 if (tasks.isEmpty) {
-                  return _EmptyState(
-                      onAdd: () => _openAddTask(context));
+                  return _EmptyState(onAdd: () => _openAddTask(context));
                 }
-                return ListView.builder(
+                return ReorderableListView.builder(
                   padding: const EdgeInsets.fromLTRB(20, 4, 20, 110),
                   itemCount: tasks.length,
                   itemBuilder: (ctx, i) =>
-                      _TaskCard(task: tasks[i]),
+                      _TaskCard(key: ValueKey(tasks[i].id), task: tasks[i]),
+                  // Default drag proxy wraps the item in an elevated
+                  // rectangular Material — strip that so only the card's
+                  // own rounded shape and shadow show while dragging.
+                  proxyDecorator: (child, index, animation) =>
+                      Material(type: MaterialType.transparency, child: child),
+                  onReorder: (oldIndex, newIndex) {
+                    final reordered = List<Task>.from(tasks);
+                    final moved = reordered.removeAt(oldIndex);
+                    reordered.insert(
+                        newIndex > oldIndex ? newIndex - 1 : newIndex, moved);
+                    TaskService.reorderTasks(reordered);
+                  },
                 );
               },
             ),
@@ -291,8 +299,7 @@ class _UserAvatar extends StatelessWidget {
         shape: BoxShape.circle,
         color: lighten(accentColor, 0.32),
         image: photoUrl != null
-            ? DecorationImage(
-                image: NetworkImage(photoUrl), fit: BoxFit.cover)
+            ? DecorationImage(image: NetworkImage(photoUrl), fit: BoxFit.cover)
             : null,
       ),
       child: photoUrl == null
@@ -324,8 +331,8 @@ class _EmptyState extends StatelessWidget {
             'assets/odyssey_logo.svg',
             width: 64,
             height: 64,
-            colorFilter: ColorFilter.mode(
-                lighten(accentColor, 0.28), BlendMode.srcIn),
+            colorFilter:
+                ColorFilter.mode(lighten(accentColor, 0.28), BlendMode.srcIn),
           ),
           const SizedBox(height: 20),
           const Text('No tasks yet',
@@ -340,8 +347,7 @@ class _EmptyState extends StatelessWidget {
           GestureDetector(
             onTap: onAdd,
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 24, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
               decoration: BoxDecoration(
                 color: accentColor,
                 borderRadius: BorderRadius.circular(14),
@@ -363,7 +369,7 @@ class _EmptyState extends StatelessWidget {
 
 class _TaskCard extends StatelessWidget {
   final Task task;
-  const _TaskCard({required this.task});
+  const _TaskCard({super.key, required this.task});
 
   @override
   Widget build(BuildContext context) {
@@ -396,8 +402,7 @@ class _TaskCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Text(task.emoji,
-                    style: const TextStyle(fontSize: 28)),
+                Text(task.emoji, style: const TextStyle(fontSize: 28)),
                 const Spacer(),
                 Icon(Icons.arrow_forward_ios_rounded,
                     size: 14, color: Colors.grey[500]),
@@ -416,9 +421,7 @@ class _TaskCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey[600],
-                      height: 1.4)),
+                      fontSize: 13, color: Colors.grey[600], height: 1.4)),
             ],
             if (task.milestones.isNotEmpty) ...[
               const SizedBox(height: 14),
@@ -427,8 +430,7 @@ class _TaskCard extends StatelessWidget {
                 child: LinearProgressIndicator(
                   value: task.totalProgress,
                   backgroundColor: progressColor.withOpacity(0.18),
-                  valueColor:
-                      AlwaysStoppedAnimation<Color>(progressColor),
+                  valueColor: AlwaysStoppedAnimation<Color>(progressColor),
                   minHeight: 5,
                 ),
               ),
@@ -437,9 +439,7 @@ class _TaskCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(_progressLabel(task),
-                      style: TextStyle(
-                          fontSize: 11,
-                          color: progressTextColor)),
+                      style: TextStyle(fontSize: 11, color: progressTextColor)),
                   Text('${(task.totalProgress * 100).round()}%',
                       style: TextStyle(
                           fontSize: 11,

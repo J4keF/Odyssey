@@ -85,8 +85,7 @@ class Daily {
   Daily toggle() {
     final today = _fmt(DateTime.now());
     if (lastCheckedDate == today) {
-      final yesterday =
-          _fmt(DateTime.now().subtract(const Duration(days: 1)));
+      final yesterday = _fmt(DateTime.now().subtract(const Duration(days: 1)));
       return Daily(
         id: id,
         title: title,
@@ -95,10 +94,8 @@ class Daily {
         longestStreak: longestStreak,
       );
     }
-    final yesterday =
-        _fmt(DateTime.now().subtract(const Duration(days: 1)));
-    final newStreak =
-        lastCheckedDate == yesterday ? currentStreak + 1 : 1;
+    final yesterday = _fmt(DateTime.now().subtract(const Duration(days: 1)));
+    final newStreak = lastCheckedDate == yesterday ? currentStreak + 1 : 1;
     return Daily(
       id: id,
       title: title,
@@ -171,6 +168,9 @@ class Milestone {
     return steppingStones.where((s) => s.isCompleted).length /
         steppingStones.length;
   }
+
+  bool get isComplete =>
+      steppingStones.isNotEmpty && steppingStones.every((s) => s.isCompleted);
 }
 
 // ─── Task ─────────────────────────────────────────────────────────────────────
@@ -183,6 +183,7 @@ class Task {
   final String description;
   final int colorIndex;
   final DateTime createdAt;
+  final int order;
   final List<Milestone> milestones;
 
   const Task({
@@ -193,6 +194,7 @@ class Task {
     this.description = '',
     this.colorIndex = 0,
     required this.createdAt,
+    required this.order,
     this.milestones = const [],
   });
 
@@ -207,21 +209,27 @@ class Task {
 
   Color get cardColor => cardColors[colorIndex % cardColors.length];
 
-  factory Task.fromMap(Map<String, dynamic> m, String id) => Task(
-        id: id,
-        userId: m['userId'] as String? ?? '',
-        emoji: m['emoji'] as String? ?? '🎯',
-        title: m['title'] as String? ?? '',
-        description: m['description'] as String? ?? '',
-        colorIndex: m['colorIndex'] as int? ?? 0,
-        createdAt: m['createdAt'] != null
-            ? (m['createdAt'] as Timestamp).toDate()
-            : DateTime.now(),
-        milestones: (m['milestones'] as List<dynamic>? ?? [])
-            .map((e) => Milestone.fromMap(e as Map<String, dynamic>))
-            .toList()
-          ..sort((a, b) => a.order.compareTo(b.order)),
-      );
+  factory Task.fromMap(Map<String, dynamic> m, String id) {
+    final createdAt = m['createdAt'] != null
+        ? (m['createdAt'] as Timestamp).toDate()
+        : DateTime.now();
+    // Tasks created before drag-reordering existed have no stored order —
+    // fall back to newest-first, matching the old createdAt-based sort.
+    return Task(
+      id: id,
+      userId: m['userId'] as String? ?? '',
+      emoji: m['emoji'] as String? ?? '🎯',
+      title: m['title'] as String? ?? '',
+      description: m['description'] as String? ?? '',
+      colorIndex: m['colorIndex'] as int? ?? 0,
+      createdAt: createdAt,
+      order: m['order'] as int? ?? -createdAt.millisecondsSinceEpoch,
+      milestones: (m['milestones'] as List<dynamic>? ?? [])
+          .map((e) => Milestone.fromMap(e as Map<String, dynamic>))
+          .toList()
+        ..sort((a, b) => a.order.compareTo(b.order)),
+    );
+  }
 
   Map<String, dynamic> toMap() => {
         'userId': userId,
@@ -230,10 +238,11 @@ class Task {
         'description': description,
         'colorIndex': colorIndex,
         'createdAt': Timestamp.fromDate(createdAt),
+        'order': order,
         'milestones': milestones.map((m) => m.toMap()).toList(),
       };
 
-  Task copyWith({List<Milestone>? milestones}) => Task(
+  Task copyWith({List<Milestone>? milestones, int? order}) => Task(
         id: id,
         userId: userId,
         emoji: emoji,
@@ -241,14 +250,13 @@ class Task {
         description: description,
         colorIndex: colorIndex,
         createdAt: createdAt,
+        order: order ?? this.order,
         milestones: milestones ?? this.milestones,
       );
 
   double get totalProgress {
     if (milestones.isEmpty) return 0;
-    return milestones
-            .map((m) => m.progress)
-            .fold(0.0, (sum, p) => sum + p) /
+    return milestones.map((m) => m.progress).fold(0.0, (sum, p) => sum + p) /
         milestones.length;
   }
 }

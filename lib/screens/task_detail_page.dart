@@ -158,7 +158,9 @@ class _ProgressBar extends StatelessWidget {
                 style: TextStyle(fontSize: 12, color: textColor)),
             Text('${(progress * 100).round()}%',
                 style: TextStyle(
-                    fontSize: 12, fontWeight: FontWeight.w600, color: textColor)),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: textColor)),
           ],
         ),
         const SizedBox(height: 6),
@@ -239,8 +241,7 @@ class _QuickAddMilestone extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) =>
-          EditTaskSheet(task: task, startWithNewMilestone: true),
+      builder: (_) => EditTaskSheet(task: task, startWithNewMilestone: true),
     );
   }
 
@@ -268,8 +269,8 @@ class _QuickAddMilestone extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: Colors.white,
-                      border: Border.all(
-                          color: color.withOpacity(0.4), width: 1.5),
+                      border:
+                          Border.all(color: color.withOpacity(0.4), width: 1.5),
                     ),
                     child: Icon(Icons.add_rounded, size: 16, color: color),
                   ),
@@ -301,8 +302,7 @@ class _MilestoneRowState extends State<_MilestoneRow> {
   Widget build(BuildContext context) {
     final m = widget.milestone;
     final progressColor = darken(widget.task.cardColor);
-    final allDone = m.steppingStones.isNotEmpty &&
-        m.steppingStones.every((s) => s.isCompleted);
+    final allDone = m.isComplete;
 
     // Stack allows dotted connector to track frame height
     // Connector overshoots bottom edge to connect to next milestone
@@ -458,15 +458,12 @@ class _MilestoneRowState extends State<_MilestoneRow> {
                                     task: widget.task, milestone: m),
                               if (m.dailies.isNotEmpty) ...[
                                 const SizedBox(height: 8),
-                                _DailySection(
-                                    task: widget.task, milestone: m),
+                                _DailySection(task: widget.task, milestone: m),
                               ],
-                              if (m.steppingStones.isEmpty &&
-                                  m.dailies.isEmpty)
+                              if (m.steppingStones.isEmpty && m.dailies.isEmpty)
                                 Padding(
                                   padding: const EdgeInsets.only(top: 4),
-                                  child: Text(
-                                      'No items yet. Tap Edit to add.',
+                                  child: Text('No items yet. Tap Edit to add.',
                                       style: TextStyle(
                                           fontSize: 13,
                                           color: Colors.grey[400])),
@@ -574,9 +571,7 @@ class _SteppingStoneSection extends StatelessWidget {
               const SizedBox(width: 5),
               Text('Stepping Stones',
                   style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: color)),
+                      fontSize: 12, fontWeight: FontWeight.w600, color: color)),
             ],
           ),
           const SizedBox(height: 8),
@@ -668,9 +663,7 @@ class _DailySection extends StatelessWidget {
               const SizedBox(width: 5),
               Text('Dailies',
                   style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: color)),
+                      fontSize: 12, fontWeight: FontWeight.w600, color: color)),
             ],
           ),
           const SizedBox(height: 8),

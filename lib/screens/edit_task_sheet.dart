@@ -67,6 +67,39 @@ class _EditTaskSheetState extends State<EditTaskSheet> {
     super.dispose();
   }
 
+  void _confirmDelete() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Delete task?',
+            style: TextStyle(fontWeight: FontWeight.w700)),
+        content: const Text(
+            'This permanently deletes this task and all its milestones. This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await TaskService.deleteTask(widget.task.id);
+              if (mounted) {
+                Navigator.of(context)
+                  ..pop()
+                  ..pop();
+              }
+            },
+            child: const Text('Delete',
+                style:
+                    TextStyle(color: Colors.red, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _pickEmoji() async {
     final result = await showModalBottomSheet<String>(
       context: context,
@@ -88,9 +121,7 @@ class _EditTaskSheetState extends State<EditTaskSheet> {
 
     try {
       // Rebuild milestone list, preserving existing completion state
-      final existingById = {
-        for (final m in widget.task.milestones) m.id: m
-      };
+      final existingById = {for (final m in widget.task.milestones) m.id: m};
 
       final milestones = _milestones.asMap().entries.map((entry) {
         final i = entry.key;
@@ -99,8 +130,7 @@ class _EditTaskSheetState extends State<EditTaskSheet> {
 
         // Preserve existing stepping-stone completion state
         final existingStonesById = {
-          for (final s in existing?.steppingStones ?? <SteppingStone>[])
-            s.id: s
+          for (final s in existing?.steppingStones ?? <SteppingStone>[]) s.id: s
         };
         final stones = draft.steppingStones
             .where((s) => s.title.trim().isNotEmpty)
@@ -118,9 +148,8 @@ class _EditTaskSheetState extends State<EditTaskSheet> {
         final existingDailiesById = {
           for (final d in existing?.dailies ?? <Daily>[]) d.id: d
         };
-        final dailies = draft.dailies
-            .where((d) => d.title.trim().isNotEmpty)
-            .map((d) {
+        final dailies =
+            draft.dailies.where((d) => d.title.trim().isNotEmpty).map((d) {
           final prev = existingDailiesById[d.id];
           return Daily(
             id: d.id,
@@ -149,6 +178,7 @@ class _EditTaskSheetState extends State<EditTaskSheet> {
         description: _descCtrl.text.trim(),
         colorIndex: _colorIndex,
         createdAt: widget.task.createdAt,
+        order: widget.task.order,
         milestones: milestones,
       );
 
@@ -191,14 +221,19 @@ class _EditTaskSheetState extends State<EditTaskSheet> {
               ),
               // Header
               Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 child: Row(
                   children: [
                     const Text('Edit Task',
                         style: TextStyle(
                             fontSize: 20, fontWeight: FontWeight.w700)),
                     const Spacer(),
+                    IconButton(
+                      onPressed: _confirmDelete,
+                      icon: const Icon(Icons.delete_outline_rounded,
+                          color: Colors.red),
+                    ),
                     TextButton(
                       onPressed: () => Navigator.pop(context),
                       child: const Text('Cancel',
@@ -223,8 +258,7 @@ class _EditTaskSheetState extends State<EditTaskSheet> {
                               child: CircularProgressIndicator(
                                   color: Colors.white, strokeWidth: 2))
                           : const Text('Save',
-                              style:
-                                  TextStyle(fontWeight: FontWeight.w700)),
+                              style: TextStyle(fontWeight: FontWeight.w700)),
                     ),
                   ],
                 ),
@@ -247,13 +281,11 @@ class _EditTaskSheetState extends State<EditTaskSheet> {
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                  color: Colors.grey.shade200),
+                              border: Border.all(color: Colors.grey.shade200),
                             ),
                             child: Center(
                                 child: Text(_emoji,
-                                    style: const TextStyle(
-                                        fontSize: 28))),
+                                    style: const TextStyle(fontSize: 28))),
                           ),
                         ),
                         const SizedBox(width: 14),
@@ -261,8 +293,7 @@ class _EditTaskSheetState extends State<EditTaskSheet> {
                           child: TextField(
                             controller: _titleCtrl,
                             style: const TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w700),
+                                fontSize: 22, fontWeight: FontWeight.w700),
                             decoration: const InputDecoration(
                               hintText: 'Task title',
                               hintStyle: TextStyle(
@@ -282,8 +313,8 @@ class _EditTaskSheetState extends State<EditTaskSheet> {
                       style: const TextStyle(fontSize: 15),
                       decoration: InputDecoration(
                         hintText: 'Add a description…',
-                        hintStyle: TextStyle(
-                            color: Colors.grey[400], fontSize: 15),
+                        hintStyle:
+                            TextStyle(color: Colors.grey[400], fontSize: 15),
                         border: InputBorder.none,
                       ),
                     ),
@@ -299,12 +330,11 @@ class _EditTaskSheetState extends State<EditTaskSheet> {
                       children: [
                         const Text('Milestones',
                             style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600)),
+                                fontSize: 16, fontWeight: FontWeight.w600)),
                         const Spacer(),
                         TextButton.icon(
-                          onPressed: () => setState(() => _milestones
-                              .add(MilestoneDraft(id: _uuid.v4()))),
+                          onPressed: () => setState(() =>
+                              _milestones.add(MilestoneDraft(id: _uuid.v4()))),
                           icon: const Icon(Icons.add, size: 18),
                           label: const Text('Add'),
                           style: TextButton.styleFrom(
@@ -318,21 +348,23 @@ class _EditTaskSheetState extends State<EditTaskSheet> {
                       Center(
                         child: Text(
                           'No milestones yet — tap Add',
-                          style: TextStyle(
-                              color: Colors.grey[400], fontSize: 13),
+                          style:
+                              TextStyle(color: Colors.grey[400], fontSize: 13),
                         ),
                       )
                     else
-                      ..._milestones.asMap().entries.map((e) =>
-                          MilestoneDraftCard(
-                            key: ValueKey(e.value.id),
-                            draft: e.value,
-                            index: e.key,
-                            startExpanded: e.value.id == _autoExpandId,
-                            onDelete: () =>
-                                setState(() => _milestones.removeAt(e.key)),
-                            onChange: () => setState(() {}),
-                          )),
+                      ..._milestones
+                          .asMap()
+                          .entries
+                          .map((e) => MilestoneDraftCard(
+                                key: ValueKey(e.value.id),
+                                draft: e.value,
+                                index: e.key,
+                                startExpanded: e.value.id == _autoExpandId,
+                                onDelete: () =>
+                                    setState(() => _milestones.removeAt(e.key)),
+                                onChange: () => setState(() {}),
+                              )),
                     const SizedBox(height: 40),
                   ],
                 ),
@@ -366,12 +398,10 @@ class _ColorRowEdit extends StatelessWidget {
               color: Task.cardColors[i],
               shape: BoxShape.circle,
               border: Border.all(
-                  color: isSel ? accentColor : Colors.transparent,
-                  width: 2),
+                  color: isSel ? accentColor : Colors.transparent, width: 2),
             ),
-            child: isSel
-                ? Icon(Icons.check, size: 14, color: accentColor)
-                : null,
+            child:
+                isSel ? Icon(Icons.check, size: 14, color: accentColor) : null,
           ),
         );
       }),

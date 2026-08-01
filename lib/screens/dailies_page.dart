@@ -13,22 +13,23 @@ class DailiesPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final accentColor = context.watch<ThemeController>().accentColor;
     return SafeArea(
-      bottom: false, // let floating nav + scroll padding handle bottom clearance
+      bottom:
+          false, // let floating nav + scroll padding handle bottom clearance
       child: StreamBuilder<List<Task>>(
         stream: TaskService.tasksStream(),
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
-            return Center(
-                child: CircularProgressIndicator(color: accentColor));
+            return Center(child: CircularProgressIndicator(color: accentColor));
           }
 
           // Flatten all dailies with their task/milestone context
           final entries = <_DailyEntry>[];
           for (final task in snap.data ?? []) {
             for (final milestone in task.milestones) {
+              if (milestone.isComplete) continue;
               for (final daily in milestone.dailies) {
-                entries.add(
-                    _DailyEntry(task: task, milestone: milestone, daily: daily));
+                entries.add(_DailyEntry(
+                    task: task, milestone: milestone, daily: daily));
               }
             }
           }
@@ -36,13 +37,11 @@ class DailiesPage extends StatelessWidget {
           // Split into today-done and pending
           final pending =
               entries.where((e) => !e.daily.isCheckedToday).toList();
-          final done =
-              entries.where((e) => e.daily.isCheckedToday).toList();
+          final done = entries.where((e) => e.daily.isCheckedToday).toList();
 
           final totalCount = entries.length;
           final doneCount = done.length;
-          final allComplete =
-              totalCount > 0 && doneCount == totalCount;
+          final allComplete = totalCount > 0 && doneCount == totalCount;
 
           return CustomScrollView(
             slivers: [
@@ -65,8 +64,7 @@ class DailiesPage extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         _todayLabel(),
-                        style: TextStyle(
-                            fontSize: 14, color: Colors.grey[500]),
+                        style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                       ),
                       if (totalCount > 0) ...[
                         const SizedBox(height: 16),
@@ -88,8 +86,7 @@ class DailiesPage extends StatelessWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text('☀️',
-                            style: TextStyle(fontSize: 52)),
+                        const Text('☀️', style: TextStyle(fontSize: 52)),
                         const SizedBox(height: 12),
                         const Text('No dailies yet',
                             style: TextStyle(
@@ -100,8 +97,8 @@ class DailiesPage extends StatelessWidget {
                         Text(
                           'Add dailies to your task milestones\nto build your routine',
                           textAlign: TextAlign.center,
-                          style: TextStyle(
-                              fontSize: 14, color: Colors.grey[500]),
+                          style:
+                              TextStyle(fontSize: 14, color: Colors.grey[500]),
                         ),
                       ],
                     ),
@@ -155,12 +152,27 @@ class DailiesPage extends StatelessWidget {
   String _todayLabel() {
     final now = DateTime.now();
     const days = [
-      'Monday', 'Tuesday', 'Wednesday', 'Thursday',
-      'Friday', 'Saturday', 'Sunday'
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday'
     ];
     const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December'
     ];
     return '${days[now.weekday - 1]}, ${now.day} ${months[now.month - 1]}';
   }
@@ -174,9 +186,7 @@ class _SummaryCard extends StatelessWidget {
   final bool allComplete;
 
   const _SummaryCard(
-      {required this.done,
-      required this.total,
-      required this.allComplete});
+      {required this.done, required this.total, required this.allComplete});
 
   @override
   Widget build(BuildContext context) {
@@ -223,8 +233,7 @@ class _SummaryCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress,
               backgroundColor: Colors.white24,
-              valueColor:
-                  const AlwaysStoppedAnimation<Color>(Colors.white),
+              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
               minHeight: 6,
             ),
           ),
@@ -265,17 +274,14 @@ class _SectionHeader extends StatelessWidget {
                     color: Color(0xFF1A1A1A))),
             const SizedBox(width: 8),
             Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 8, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
                 color: color.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text('$count',
                   style: TextStyle(
-                      color: color,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700)),
+                      color: color, fontSize: 12, fontWeight: FontWeight.w700)),
             ),
           ],
         ),
@@ -325,7 +331,5 @@ class _DailyEntry {
   final Milestone milestone;
   final Daily daily;
   const _DailyEntry(
-      {required this.task,
-      required this.milestone,
-      required this.daily});
+      {required this.task, required this.milestone, required this.daily});
 }

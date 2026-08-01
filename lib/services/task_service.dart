@@ -16,12 +16,12 @@ class TaskService {
       .snapshots()
       .map((snap) => snap.docs
           .map((d) => Task.fromMap(d.data() as Map<String, dynamic>, d.id))
-          .toList());
+          .toList()
+        ..sort((a, b) => a.order.compareTo(b.order)));
 
   // ─── Create ────────────────────────────────────────────────────────────────
 
-  static Future<void> addTask(Task task) =>
-      _col.doc(task.id).set(task.toMap());
+  static Future<void> addTask(Task task) => _col.doc(task.id).set(task.toMap());
 
   // ─── Update whole task (milestones, dailies, stepping stones) ──────────────
 
@@ -31,6 +31,16 @@ class TaskService {
   // ─── Delete ────────────────────────────────────────────────────────────────
 
   static Future<void> deleteTask(String taskId) => _col.doc(taskId).delete();
+
+  // ─── Reorder ───────────────────────────────────────────────────────────────
+
+  static Future<void> reorderTasks(List<Task> orderedTasks) async {
+    final batch = _db.batch();
+    for (var i = 0; i < orderedTasks.length; i++) {
+      batch.update(_col.doc(orderedTasks[i].id), {'order': i});
+    }
+    await batch.commit();
+  }
 
   // ─── Toggle daily ──────────────────────────────────────────────────────────
 

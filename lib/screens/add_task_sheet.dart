@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
@@ -9,18 +10,8 @@ import '../utils/color_utils.dart';
 
 const _uuid = Uuid();
 
-// ─── Shared emoji list ────────────────────────────────────────────────────────
-
-const kEmojis = [
-  '🎯','📚','💪','🌱','🎨','🎵','✈️','🏃','💻','🧘',
-  '🍎','🌍','🔬','🎭','📷','⚽','🏋️','🛠️','🤝','💡',
-  '🌟','🏆','📝','🎓','🚀','🧩','🎸','🌸','🦋','🔥',
-  '🎪','🎬','🎤','🎺','🏄','🧗','🤸','🏇','🤿','🧁',
-  '🌮','🍜','☕','🍵','🎂','🥗','🍕','🍣','🥐','🧃',
-];
-
 // ─── Emoji picker modal ───────────────────────────────────────────────────────
-// Opens as its own bottom sheet so it never shifts the parent layout.
+// Opens as its own bottom sheet so parent layout not shifted.
 
 class EmojiPickerModal extends StatefulWidget {
   final String current;
@@ -33,12 +24,21 @@ class EmojiPickerModal extends StatefulWidget {
 class _EmojiPickerModalState extends State<EmojiPickerModal> {
   late String _selected;
   final _ctrl = TextEditingController();
+  double? _safeAreaBottom;
+  bool _searchOpen = false;
 
   @override
   void initState() {
     super.initState();
     _selected = widget.current;
     _ctrl.text = widget.current;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Capture once, before the keyboard can change what iOS reports here.
+    _safeAreaBottom ??= MediaQuery.of(context).padding.bottom;
   }
 
   @override
@@ -60,129 +60,149 @@ class _EmojiPickerModalState extends State<EmojiPickerModal> {
         color: Color(0xFFFAF7F4),
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Handle
-          Container(
-            margin: const EdgeInsets.symmetric(vertical: 10),
-            width: 40, height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-            child: Row(
-              children: [
-                const Text('Choose Emoji',
-                    style: TextStyle(
-                        fontSize: 17, fontWeight: FontWeight.w700)),
-                const Spacer(),
-                TextButton(
-                  onPressed: () => Navigator.pop(context, _selected),
-                  child: Text('Done',
-                      style: TextStyle(color: accentColor, fontWeight: FontWeight.w600)),
-                ),
-              ],
-            ),
-          ),
-          // Current selection preview
-          Text(_selected, style: const TextStyle(fontSize: 52)),
-          const SizedBox(height: 12),
-          // Type-any-emoji field — tapping opens native emoji keyboard
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: TextField(
-              controller: _ctrl,
-              maxLength: 2,
-              style: const TextStyle(fontSize: 24),
-              textAlign: TextAlign.center,
-              decoration: InputDecoration(
-                counterText: '',
-                hintText: 'Type any emoji…',
-                hintStyle: TextStyle(
-                    color: Colors.grey[400], fontSize: 14),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey.shade200),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey.shade200),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: accentColor, width: 2),
-                ),
-                suffixIcon: const Tooltip(
-                  message: 'Tap the emoji key (🌐 or 😊) on your keyboard',
-                  child: Icon(Icons.info_outline_rounded,
-                      color: Colors.grey, size: 18),
-                ),
-              ),
-              onChanged: (v) {
-                final runes = v.runes.toList();
-                if (runes.isNotEmpty) {
-                  setState(() => _selected = String.fromCharCodes(
-                      runes.take(2)));
-                }
-              },
-            ),
-          ),
-          const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text('Quick picks',
-                  style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey[500])),
-            ),
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            height: 200,
-            child: GridView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 8,
-                childAspectRatio: 1,
-                crossAxisSpacing: 4,
-                mainAxisSpacing: 4,
-              ),
-              itemCount: kEmojis.length,
-              itemBuilder: (ctx, i) {
-                final e = kEmojis[i];
-                final isSel = e == _selected;
-                return GestureDetector(
-                  onTap: () => _pick(e),
-                  child: Container(
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header section is kept keyboard-blind: it's already well clear
+            // of where the keyboard would cover, so it should never shift.
+            MediaQuery.removeViewInsets(
+              context: context,
+              removeBottom: true,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Handle
+                  Container(
+                    margin: const EdgeInsets.symmetric(vertical: 10),
+                    width: 40,
+                    height: 4,
                     decoration: BoxDecoration(
-                      color: isSel
-                          ? lighten(accentColor, 0.32)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
                     ),
-                    child: Center(
-                        child: Text(e,
-                            style: const TextStyle(fontSize: 22))),
                   ),
-                );
-              },
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                    child: Row(
+                      children: [
+                        const Text('Choose Emoji',
+                            style: TextStyle(
+                                fontSize: 17, fontWeight: FontWeight.w700)),
+                        const Spacer(),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, _selected),
+                          child: Text('Done',
+                              style: TextStyle(
+                                  color: accentColor,
+                                  fontWeight: FontWeight.w600)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Current selection preview
+                  Text(_selected, style: const TextStyle(fontSize: 52)),
+                  const SizedBox(height: 12),
+                  // Type-any-emoji field — tapping opens native emoji keyboard
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: TextField(
+                      controller: _ctrl,
+                      maxLength: 2,
+                      scrollPadding: EdgeInsets.zero,
+                      style: const TextStyle(fontSize: 24),
+                      textAlign: TextAlign.center,
+                      decoration: InputDecoration(
+                        counterText: '',
+                        hintText: 'Type any emoji…',
+                        hintStyle:
+                            TextStyle(color: Colors.grey[400], fontSize: 14),
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade200),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade200),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: accentColor, width: 2),
+                        ),
+                        suffixIcon: const Tooltip(
+                          message: 'Tap the emoji key on your keyboard',
+                          child: Icon(Icons.info_outline_rounded,
+                              color: Colors.grey, size: 18),
+                        ),
+                      ),
+                      onChanged: (v) {
+                        final runes = v.runes.toList();
+                        if (runes.isNotEmpty) {
+                          setState(() =>
+                              _selected = String.fromCharCodes(runes.take(2)));
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
-        ],
+            const SizedBox(height: 12),
+            // Only lifts when the picker's own search view is open, so
+            // opening it animates smoothly above the keyboard while tapping
+            // the type-any-emoji field above stays completely unaffected.
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 120),
+              curve: Curves.easeOut,
+              color: Colors.white,
+              padding: EdgeInsets.only(
+                bottom: _searchOpen
+                    ? MediaQuery.of(context).viewInsets.bottom
+                    : (_safeAreaBottom ?? 0),
+              ),
+              child: EmojiPicker(
+                onEmojiSelected: (category, emoji) => _pick(emoji.emoji),
+                config: Config(
+                  height: 320,
+                  emojiViewConfig: const EmojiViewConfig(
+                    columns: 8,
+                    emojiSizeMax: 26,
+                    backgroundColor: Colors.white,
+                  ),
+                  categoryViewConfig: CategoryViewConfig(
+                    backgroundColor: Colors.white,
+                    indicatorColor: accentColor,
+                    iconColorSelected: accentColor,
+                    backspaceColor: accentColor,
+                  ),
+                  bottomActionBarConfig: BottomActionBarConfig(
+                    backgroundColor: Colors.white,
+                    buttonColor: accentColor,
+                    buttonIconColor: Colors.white,
+                    customBottomActionBar: (config, state, showSearchView) =>
+                        Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: DefaultBottomActionBar(config, state, () {
+                        setState(() => _searchOpen = true);
+                        showSearchView();
+                      }),
+                    ),
+                  ),
+                  searchViewConfig: SearchViewConfig(
+                    backgroundColor: Colors.white,
+                    customSearchView: (config, state, showEmojiView) =>
+                        DefaultSearchView(config, state, () {
+                      setState(() => _searchOpen = false);
+                      showEmojiView();
+                    }),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -285,13 +305,14 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
         description: _descCtrl.text.trim(),
         colorIndex: _colorIndex,
         createdAt: DateTime.now(),
+        order: -DateTime.now().millisecondsSinceEpoch,
         milestones: milestones,
       ));
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error saving: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error saving: $e')));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -310,28 +331,27 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
         return Container(
           decoration: const BoxDecoration(
             color: Color(0xFFFAF7F4),
-            borderRadius:
-                BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
             children: [
               Container(
                 margin: const EdgeInsets.only(top: 12, bottom: 4),
-                width: 40, height: 4,
+                width: 40,
+                height: 4,
                 decoration: BoxDecoration(
                   color: Colors.grey[300],
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 child: Row(
                   children: [
                     const Text('New Task',
                         style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700)),
+                            fontSize: 20, fontWeight: FontWeight.w700)),
                     const Spacer(),
                     TextButton(
                       onPressed: () => Navigator.pop(context),
@@ -352,12 +372,12 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
                       ),
                       child: _isSaving
                           ? const SizedBox(
-                              width: 16, height: 16,
+                              width: 16,
+                              height: 16,
                               child: CircularProgressIndicator(
                                   color: Colors.white, strokeWidth: 2))
                           : const Text('Save',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.w700)),
+                              style: TextStyle(fontWeight: FontWeight.w700)),
                     ),
                   ],
                 ),
@@ -375,17 +395,16 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
                         GestureDetector(
                           onTap: _pickEmoji,
                           child: Container(
-                            width: 56, height: 56,
+                            width: 56,
+                            height: 56,
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                  color: Colors.grey.shade200),
+                              border: Border.all(color: Colors.grey.shade200),
                             ),
                             child: Center(
                                 child: Text(_emoji,
-                                    style: const TextStyle(
-                                        fontSize: 28))),
+                                    style: const TextStyle(fontSize: 28))),
                           ),
                         ),
                         const SizedBox(width: 14),
@@ -393,8 +412,7 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
                           child: TextField(
                             controller: _titleCtrl,
                             style: const TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w700),
+                                fontSize: 22, fontWeight: FontWeight.w700),
                             decoration: const InputDecoration(
                               hintText: 'Task title',
                               hintStyle: TextStyle(
@@ -414,8 +432,8 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
                       style: const TextStyle(fontSize: 15),
                       decoration: InputDecoration(
                         hintText: 'Add a description…',
-                        hintStyle: TextStyle(
-                            color: Colors.grey[400], fontSize: 15),
+                        hintStyle:
+                            TextStyle(color: Colors.grey[400], fontSize: 15),
                         border: InputBorder.none,
                       ),
                     ),
@@ -430,12 +448,11 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
                       children: [
                         const Text('Milestones',
                             style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600)),
+                                fontSize: 16, fontWeight: FontWeight.w600)),
                         const Spacer(),
                         TextButton.icon(
-                          onPressed: () => setState(() => _milestones
-                              .add(MilestoneDraft(id: _uuid.v4()))),
+                          onPressed: () => setState(() =>
+                              _milestones.add(MilestoneDraft(id: _uuid.v4()))),
                           icon: const Icon(Icons.add, size: 18),
                           label: const Text('Add'),
                           style: TextButton.styleFrom(
@@ -449,19 +466,21 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
                       Center(
                         child: Text(
                           'No milestones yet — tap Add',
-                          style: TextStyle(
-                              color: Colors.grey[400], fontSize: 13),
+                          style:
+                              TextStyle(color: Colors.grey[400], fontSize: 13),
                         ),
                       )
                     else
-                      ..._milestones.asMap().entries.map((e) =>
-                          MilestoneDraftCard(
-                            draft: e.value,
-                            index: e.key,
-                            onDelete: () =>
-                                setState(() => _milestones.removeAt(e.key)),
-                            onChange: () => setState(() {}),
-                          )),
+                      ..._milestones
+                          .asMap()
+                          .entries
+                          .map((e) => MilestoneDraftCard(
+                                draft: e.value,
+                                index: e.key,
+                                onDelete: () =>
+                                    setState(() => _milestones.removeAt(e.key)),
+                                onChange: () => setState(() {}),
+                              )),
                     const SizedBox(height: 40),
                   ],
                 ),
@@ -481,9 +500,7 @@ class _ColorRow extends StatelessWidget {
   final List<Color> colors;
   final ValueChanged<int> onTap;
   const _ColorRow(
-      {required this.selected,
-      required this.colors,
-      required this.onTap});
+      {required this.selected, required this.colors, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -495,20 +512,18 @@ class _ColorRow extends StatelessWidget {
           onTap: () => onTap(i),
           child: Container(
             margin: const EdgeInsets.only(right: 8),
-            width: 28, height: 28,
+            width: 28,
+            height: 28,
             decoration: BoxDecoration(
               color: colors[i],
               shape: BoxShape.circle,
               border: Border.all(
-                color: isSel
-                    ? accentColor
-                    : Colors.transparent,
+                color: isSel ? accentColor : Colors.transparent,
                 width: 2,
               ),
             ),
-            child: isSel
-                ? Icon(Icons.check, size: 14, color: accentColor)
-                : null,
+            child:
+                isSel ? Icon(Icons.check, size: 14, color: accentColor) : null,
           ),
         );
       }),
@@ -578,12 +593,12 @@ class _MilestoneDraftCardState extends State<MilestoneDraftCard> {
             onTap: () => setState(() => _expanded = !_expanded),
             borderRadius: BorderRadius.circular(16),
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 14, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               child: Row(
                 children: [
                   Container(
-                    width: 24, height: 24,
+                    width: 24,
+                    height: 24,
                     decoration: BoxDecoration(
                         color: accentColor, shape: BoxShape.circle),
                     child: Center(
@@ -616,15 +631,13 @@ class _MilestoneDraftCardState extends State<MilestoneDraftCard> {
                     onTap: () async {
                       final d = await showDatePicker(
                         context: context,
-                        initialDate:
-                            m.targetDate ?? DateTime.now(),
-                        firstDate: DateTime.now()
-                            .subtract(const Duration(days: 1)),
+                        initialDate: m.targetDate ?? DateTime.now(),
+                        firstDate: DateTime(2000),
                         lastDate: DateTime(2100),
                         builder: (ctx, child) => Theme(
                           data: Theme.of(ctx).copyWith(
-                              colorScheme: ColorScheme.light(
-                                  primary: accentColor)),
+                              colorScheme:
+                                  ColorScheme.light(primary: accentColor)),
                           child: child!,
                         ),
                       );
@@ -683,13 +696,13 @@ class _MilestoneDraftCardState extends State<MilestoneDraftCard> {
                     bgColor: const Color(0xFFEAF3DE),
                     items: m.steppingStones,
                     onAdd: () {
-                      setState(() => m.steppingStones
-                          .add(SubItemDraft(id: _uuid.v4())));
+                      setState(() =>
+                          m.steppingStones.add(SubItemDraft(id: _uuid.v4())));
                       widget.onChange();
                     },
                     onRemove: (id) {
-                      setState(() => m.steppingStones
-                          .removeWhere((s) => s.id == id));
+                      setState(() =>
+                          m.steppingStones.removeWhere((s) => s.id == id));
                       widget.onChange();
                     },
                     onChange: widget.onChange,
@@ -702,13 +715,12 @@ class _MilestoneDraftCardState extends State<MilestoneDraftCard> {
                     bgColor: lighten(accentColor, 0.38),
                     items: m.dailies,
                     onAdd: () {
-                      setState(() =>
-                          m.dailies.add(SubItemDraft(id: _uuid.v4())));
+                      setState(
+                          () => m.dailies.add(SubItemDraft(id: _uuid.v4())));
                       widget.onChange();
                     },
                     onRemove: (id) {
-                      setState(() =>
-                          m.dailies.removeWhere((d) => d.id == id));
+                      setState(() => m.dailies.removeWhere((d) => d.id == id));
                       widget.onChange();
                     },
                     onChange: widget.onChange,
@@ -755,8 +767,7 @@ class SubList extends StatelessWidget {
         Row(
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 8, vertical: 3),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
                 color: bgColor,
                 borderRadius: BorderRadius.circular(6),
@@ -785,8 +796,8 @@ class SubList extends StatelessWidget {
         if (items.isEmpty)
           Text('None yet',
               style: TextStyle(color: Colors.grey[400], fontSize: 12)),
-        ...items.map((item) => _SubItemRow(
-            item: item, onRemove: onRemove, onChange: onChange)),
+        ...items.map((item) =>
+            _SubItemRow(item: item, onRemove: onRemove, onChange: onChange)),
       ],
     );
   }
@@ -797,9 +808,7 @@ class _SubItemRow extends StatefulWidget {
   final ValueChanged<String> onRemove;
   final VoidCallback onChange;
   const _SubItemRow(
-      {required this.item,
-      required this.onRemove,
-      required this.onChange});
+      {required this.item, required this.onRemove, required this.onChange});
 
   @override
   State<_SubItemRow> createState() => _SubItemRowState();
@@ -826,8 +835,7 @@ class _SubItemRowState extends State<_SubItemRow> {
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         children: [
-          Icon(Icons.drag_indicator_rounded,
-              size: 16, color: Colors.grey[300]),
+          Icon(Icons.drag_indicator_rounded, size: 16, color: Colors.grey[300]),
           const SizedBox(width: 4),
           Expanded(
             child: TextField(
@@ -838,8 +846,7 @@ class _SubItemRowState extends State<_SubItemRow> {
               },
               decoration: InputDecoration(
                 hintText: 'Add title…',
-                hintStyle:
-                    TextStyle(color: Colors.grey[400], fontSize: 13),
+                hintStyle: TextStyle(color: Colors.grey[400], fontSize: 13),
                 border: InputBorder.none,
                 isDense: true,
                 contentPadding: EdgeInsets.zero,
@@ -849,8 +856,7 @@ class _SubItemRowState extends State<_SubItemRow> {
           ),
           GestureDetector(
             onTap: () => widget.onRemove(widget.item.id),
-            child: Icon(Icons.close_rounded,
-                size: 16, color: Colors.grey[400]),
+            child: Icon(Icons.close_rounded, size: 16, color: Colors.grey[400]),
           ),
         ],
       ),

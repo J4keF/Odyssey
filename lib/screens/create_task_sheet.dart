@@ -19,10 +19,23 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
   bool _isSaving = false;
 
   final List<String> _emojiChoices = [
-    '🎯', '🚀', '⭐', '🏃‍♂️', '📚', '💪', '🧘‍♀️', '🎨', '💼', '💰', '🔥', '🏆'
+    '🎯',
+    '🚀',
+    '⭐',
+    '🏃‍♂️',
+    '📚',
+    '💪',
+    '🧘‍♀️',
+    '🎨',
+    '💼',
+    '💰',
+    '🔥',
+    '🏆'
   ];
 
-  String _genId() => DateTime.now().millisecondsSinceEpoch.toString() + Random().nextInt(1000).toString();
+  String _genId() =>
+      DateTime.now().millisecondsSinceEpoch.toString() +
+      Random().nextInt(1000).toString();
 
   void _addMilestone() {
     final titleCtrl = TextEditingController();
@@ -35,7 +48,8 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
           decoration: const InputDecoration(hintText: 'e.g., Learn Basics'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () {
               if (titleCtrl.text.trim().isNotEmpty) {
@@ -81,7 +95,8 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
                     ChoiceChip(
                       label: const Text('Stepping Stone'),
                       selected: !isDaily,
-                      onSelected: (val) => setDialogState(() => isDaily = false),
+                      onSelected: (val) =>
+                          setDialogState(() => isDaily = false),
                     ),
                     const SizedBox(width: 8),
                     ChoiceChip(
@@ -94,7 +109,9 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
               ],
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel')),
               ElevatedButton(
                 onPressed: () {
                   if (titleCtrl.text.trim().isNotEmpty) {
@@ -102,11 +119,18 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
                       final m = _milestones[milestoneIndex];
                       if (isDaily) {
                         _milestones[milestoneIndex] = m.copyWith(
-                          dailies: [...m.dailies, Daily(id: _genId(), title: titleCtrl.text.trim())],
+                          dailies: [
+                            ...m.dailies,
+                            Daily(id: _genId(), title: titleCtrl.text.trim())
+                          ],
                         );
                       } else {
                         _milestones[milestoneIndex] = m.copyWith(
-                          steppingStones: [...m.steppingStones, SteppingStone(id: _genId(), title: titleCtrl.text.trim())],
+                          steppingStones: [
+                            ...m.steppingStones,
+                            SteppingStone(
+                                id: _genId(), title: titleCtrl.text.trim())
+                          ],
                         );
                       }
                     });
@@ -129,7 +153,7 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
     try {
       final user = FirebaseAuth.instance.currentUser!;
       final docRef = FirebaseFirestore.instance.collection('tasks').doc();
-      
+
       final task = Task(
         id: docRef.id,
         userId: user.uid,
@@ -138,19 +162,22 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
         description: _descCtrl.text.trim(),
         colorIndex: Random().nextInt(Task.cardColors.length),
         createdAt: DateTime.now(),
+        order: -DateTime.now().millisecondsSinceEpoch,
         milestones: _milestones,
       );
 
       await docRef.set(task.toMap());
       if (mounted) Navigator.pop(context);
     } catch (e) {
-      debugPrint('🔥 FIRESTORE ERROR: $e'); 
-      
+      debugPrint('🔥 FIRESTORE ERROR: $e');
+
       // Move setState inside the if (mounted) check!
       if (mounted) {
-        setState(() => _isSaving = false); 
+        setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save task: ${e.toString().split('Exception: ').last}')),
+          SnackBar(
+              content: Text(
+                  'Failed to save task: ${e.toString().split('Exception: ').last}')),
         );
       }
     }
@@ -171,8 +198,11 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Create Task', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-              IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+              const Text('Create Task',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context)),
             ],
           ),
           const SizedBox(height: 16),
@@ -188,44 +218,58 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
                           builder: (ctx) => AlertDialog(
                             title: const Text('Pick an Emoji'),
                             content: Wrap(
-                              spacing: 12, runSpacing: 12,
-                              children: _emojiChoices.map((e) => GestureDetector(
-                                onTap: () {
-                                  setState(() => _emoji = e);
-                                  Navigator.pop(ctx);
-                                },
-                                child: Text(e, style: const TextStyle(fontSize: 32)),
-                              )).toList(),
+                              spacing: 12,
+                              runSpacing: 12,
+                              children: _emojiChoices
+                                  .map((e) => GestureDetector(
+                                        onTap: () {
+                                          setState(() => _emoji = e);
+                                          Navigator.pop(ctx);
+                                        },
+                                        child: Text(e,
+                                            style:
+                                                const TextStyle(fontSize: 32)),
+                                      ))
+                                  .toList(),
                             ),
                           ),
                         );
                       },
                       child: Container(
                         padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(12)),
-                        child: Text(_emoji, style: const TextStyle(fontSize: 32)),
+                        decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(12)),
+                        child:
+                            Text(_emoji, style: const TextStyle(fontSize: 32)),
                       ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: TextField(
                         controller: _titleCtrl,
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                        decoration: const InputDecoration(hintText: 'Task Title', border: InputBorder.none),
+                        style: const TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.w600),
+                        decoration: const InputDecoration(
+                            hintText: 'Task Title', border: InputBorder.none),
                       ),
                     ),
                   ],
                 ),
                 TextField(
                   controller: _descCtrl,
-                  decoration: const InputDecoration(hintText: 'Add a description...', border: InputBorder.none),
+                  decoration: const InputDecoration(
+                      hintText: 'Add a description...',
+                      border: InputBorder.none),
                   maxLines: null,
                 ),
                 const Divider(height: 32),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Milestones', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text('Milestones',
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
                     TextButton.icon(
                       onPressed: _addMilestone,
                       icon: const Icon(Icons.add),
@@ -240,20 +284,26 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
                     margin: const EdgeInsets.only(bottom: 12),
                     color: const Color(0xFFFAF7F4),
                     elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey[300]!)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: Colors.grey[300]!)),
                     child: Padding(
                       padding: const EdgeInsets.all(12),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(m.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                          Text(m.title,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 16)),
                           const SizedBox(height: 8),
-                          if (m.dailies.isNotEmpty || m.steppingStones.isNotEmpty)
+                          if (m.dailies.isNotEmpty ||
+                              m.steppingStones.isNotEmpty)
                             Padding(
                               padding: const EdgeInsets.only(bottom: 8.0),
                               child: Text(
                                 '${m.dailies.length} Dailies • ${m.steppingStones.length} Stepping Stones',
-                                style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                                style: TextStyle(
+                                    color: Colors.grey[600], fontSize: 12),
                               ),
                             ),
                           SizedBox(
@@ -263,7 +313,8 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
                               icon: const Icon(Icons.add, size: 16),
                               label: const Text('Add Subtask'),
                               style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 12),
                               ),
                             ),
                           )
@@ -283,11 +334,14 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFE8581A),
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
               ),
               child: _isSaving
                   ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text('Create Task', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  : const Text('Create Task',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ),
           ),
         ],
