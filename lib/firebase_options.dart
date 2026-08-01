@@ -52,27 +52,29 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyCKcZdSHXRHUc-CeNg1RVpOrq_TNrzA1wo',
-    appId: '1:352109049226:android:0b1569d3aff27d82b28473',
+    appId: '1:352109049226:android:cd7d36c995161333b28473',
     messagingSenderId: '352109049226',
     projectId: 'odyssey-4600e',
     storageBucket: 'odyssey-4600e.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyCWNLO_JOUQtDmGHUZRGFLHK46e1rMEK6M',
-    appId: '1:352109049226:ios:c432ae857310e0e5b28473',
+    appId: '1:352109049226:ios:dba4721af666429cb28473',
     messagingSenderId: '352109049226',
     projectId: 'odyssey-4600e',
     storageBucket: 'odyssey-4600e.firebasestorage.app',
-    iosBundleId: 'com.example.odyssey',
+    androidClientId: '352109049226-r1t8lhr8p3qmns6if0rpkct490hk9o1q.apps.googleusercontent.com',
+    iosClientId: '352109049226-ulp5rg98ql143phillf42lho1mq368sb.apps.googleusercontent.com',
+    iosBundleId: 'com.jakefogel.odyssey',
   );
-
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyCWNLO_JOUQtDmGHUZRGFLHK46e1rMEK6M',
     appId: '1:352109049226:ios:c432ae857310e0e5b28473',
     messagingSenderId: '352109049226',
     projectId: 'odyssey-4600e',
     storageBucket: 'odyssey-4600e.firebasestorage.app',
+    androidClientId: '352109049226-r1t8lhr8p3qmns6if0rpkct490hk9o1q.apps.googleusercontent.com',
+    iosClientId: '352109049226-s56mo9rj6ebl6ut9mtnf0avuaedelsbs.apps.googleusercontent.com',
     iosBundleId: 'com.example.odyssey',
   );
 
